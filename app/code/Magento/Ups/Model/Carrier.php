@@ -406,6 +406,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 return $this->_getCgiQuotes();
             case 'UPS_XML':
                 return $this->_getXmlQuotes();
+            case 'UPS_UNISHIP':
+                return $this->_getUnishippersQuotes();
             default:
                 break;
         }
@@ -885,6 +887,206 @@ XMLRequest;
                 $rate->setCost($costArr[$method]);
                 $rate->setPrice($price);
                 $result->append($rate);
+            }
+        }
+
+        return $result;
+    }
+
+	/**
+     * When using Unishippers, use similar to simple XML request and only 
+	 * one box at a time. This function finds what boxes we will ship and their 
+	 * weights, based on our company rules entered as catalog attributes. This will 
+	 * call another function to get each quote.
+     *
+     * @return Result
+	 */
+    protected function _getUnishippersQuotes()
+    {
+        $result = Mage::getModel('shipping/rate_result');
+        $r = $this->_rawRequest;
+		$tweight = $r->getWeight();
+
+		if ($tweight >= 200) {
+			// Aggregate weight of all boxes
+			$r1 = $this->_getUnishippersQuote($tweight);
+			$this->_combineResults($r1, $result);
+		}
+		else {
+			// break shipment into boxes according to quote items
+			$p = Mage::getModel('catalog/product');
+			$bfield = 'box_qty_max';    //this extra field will be loaded from db
+			foreach($this->_request->getAllItems() as $item) {
+				$p ->load($item->getProductId());
+				$box_qty = (int)$p->getData($bfield);
+				if ($box_qty == 0) {
+					$fullboxcnt = 1;
+					$lastboxqty = 0;
+				}
+				else {
+					$fullboxcnt = (int)($item->getQty() / $box_qty);
+					$lastboxqty = $item->getQty() % $box_qty;
+				}
+
+				if ($fullboxcnt > 0) {
+					$r1 = $this->_getUnishippersQuote($p->getWeight() * $box_qty);
+					$this->_combineResults($r1, $result, $fullboxcnt);
+				}
+				if ($lastboxqty > 0) {
+					$r2 = $this->_getUnishippersQuote($p->getWeight() * $lastboxqty);
+					$this->_combineResults($r2, $result);
+				}
+			}
+		}
+		return $result;
+	}
+
+    protected function _getUnishippersQuote($weight, $service='ALL')
+    {
+        $url = $this->getConfigData('gateway_xml_url');
+
+        $xmlRequest=$this->_xmlAccessRequest;
+
+		date_default_timezone_set("US/Mountain");
+		
+        $r = $this->_rawRequest;
+        $params = array(
+            'userid' => $this->getConfigData('username'),
+            'userid_pass' => $this->getConfigData('password'),
+			'custNumber'  => $this->getConfigData('access_license_number'),
+			'requestKey'  => date('r'),
+            '10_action'      => $r->getAction(),
+            '13_product'     => $r->getProduct(),
+            '14_origCountry' => $r->getOrigCountry(),
+            '15_origPostal'  => $r->getOrigPostal(),
+            'origCity'       => $r->getOrigCity(),
+            'origRegionCode' => $r->getOrigRegionCode(),
+            'destState'      => $r->getDestState(),
+            '19_destPostal'  => 'US' == $r->getDestCountry() ? substr($r->getDestPostal(), 0, 5) : $r->getDestPostal(), // UPS returns error for zip+4 US codes
+            '22_destCountry' => $r->getDestCountry(),
+            'destRegionCode' => $r->getDestRegionCode(),
+//            '23_weight'      => intval($r->getWeight()),
+            '47_rate_chart'  => $r->getPickup(),
+            '48_container'   => $r->getContainer(),
+            '49_residential' => $r->getDestType(),
+			'shipDate'       => date('Y-m-d'),
+        );
+		$weight = round($weight);
+		
+$xmlRequest .= <<< XMLRequest
+<?xml version="1.0"?>
+<unishippersdomesticraterequest>
+  <username>{$params['userid']}</username>
+  <password>{$params['userid_pass']}</password>
+  <requestkey>{$params['requestKey']}</requestkey>
+  <unishipperscustomernumber>{$params['custNumber']}</unishipperscustomernumber>
+  <upsaccountnumber>9731F4</upsaccountnumber>
+  <service>$service</service>
+  <fees><fee>REP</fee></fees>
+  <packagetype>P</packagetype>
+  <weight>{$weight}</weight>
+  <length>14</length>
+  <width>14</width>
+  <height>7</height>
+  <shipdate>{$params['shipDate']}</shipdate>
+  <senderstate>{$params['origRegionCode']}</senderstate>
+  <sendercountry>{$params['14_origCountry']}</sendercountry>
+  <senderzip>{$params['15_origPostal']}</senderzip>
+  <receivercountry>{$params['22_destCountry']}</receivercountry>
+  <receiverstate>{$params['destRegionCode']}</receiverstate>
+  <receiverzip>{$params['19_destPostal']}</receiverzip>
+</unishippersdomesticraterequest>
+XMLRequest;
+
+        $xmlResponse = null; //$this->_getCachedQuotes($xmlRequest); doesn't help
+        if ($xmlResponse === null) {
+            $debugData = array('request' => $xmlRequest);
+            try {
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_HEADER, 0);
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlRequest);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (boolean)$this->getConfigFlag('mode_xml'));
+                $xmlResponse = curl_exec ($ch);
+
+                $debugData['result'] = $xmlResponse;
+//                $this->_setCachedQuotes($xmlRequest, $xmlResponse);
+            }
+            catch (Exception $e) {
+                $debugData['result'] = array('error' => $e->getMessage(), 'code' => $e->getCode());
+                $xmlResponse = '';
+            }
+            $this->_debug($debugData);
+        }
+	   return $this->_parseUnishipResponse($xmlResponse);
+    }
+
+    protected function _parseUnishipResponse($xmlResponse)
+    {
+        $costArr = array();
+        $priceArr = array();
+        $result = Mage::getModel('shipping/rate_result');
+        if (strlen(trim($xmlResponse))>0) {
+            $xml = new Varien_Simplexml_Config();
+            $xml->loadString($xmlResponse);
+            $arr = $xml->getXpath("//unishippersdomesticrateresponse/status");
+            if($arr[0]=="OK") {
+                $arr = $xml->getXpath("rates/rate");
+                $allowedMethods = explode(",", $this->getConfigData('allowed_methods'));
+
+                foreach ($arr as $rateElement) {
+					if (array_key_exists('errors', $rateElement)) continue;
+                    $code = (string)$rateElement->service;
+					# If is Saturday Delivery, prepend 'S' to code
+					foreach ($rateElement->fees->fee as $fee) {
+						if((string)$fee->code == '665') {
+							if(substr($code,0,2) != 'SN' and substr($code,0,2) != 'SS') {
+								$code = 'S'.$code;
+							}
+							break;
+						}
+					}
+                    if (in_array($code, $allowedMethods)) {
+						$cost = (string)$rateElement->total;
+                        $costArr[$code] = $cost;
+                        $priceArr[$code] = $this->getMethodPrice(floatval($cost),$code);
+                    }
+                }
+            } else {
+				//Unishippers responed with error
+                $arr = $xml->getXpath("//unishippersdomesticrateresponse/errors/error/text()");
+                $errorTitle = (string)$arr[0];
+                $error = Mage::getModel('shipping/rate_result_error');
+                $error->setCarrier('ups');
+                $error->setCarrierTitle($this->getConfigData('title'));
+                $error->setErrorMessage($errorTitle);
+                //$error->setErrorMessage($this->getConfigData('specificerrmsg'));
+				$result->append($error);
+            }
+        }
+
+        $defaults = $this->getDefaults();
+        if (empty($priceArr)) {
+            $error = Mage::getModel('shipping/rate_result_error');
+            $error->setCarrier('ups');
+            $error->setCarrierTitle($this->getConfigData('title'));
+            $error->setErrorMessage($this->getConfigData('specificerrmsg'));
+			$result->append($error);
+			$result->setError($error);
+        } else {
+            foreach ($priceArr as $method=>$price) {
+                $rate = Mage::getModel('shipping/rate_result_method');
+                $rate->setCarrier('ups');
+                $rate->setCarrierTitle($this->getConfigData('title'));
+                $rate->setMethod($method);
+                $method_arr = $this->getShipmentByCode($method);
+                $rate->setMethodTitle($method_arr);
+                $rate->setCost($costArr[$method]);
+                $rate->setPrice($price);
+				$result->append($rate);
             }
         }
 
