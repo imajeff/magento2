@@ -943,7 +943,7 @@ XMLRequest;
 
     protected function _getUnishippersQuote($weight, $service='ALL')
     {
-        $url = $this->getConfigData('gateway_xml_url');
+        $url = $this->getConfigData('uniship_xml_url');
 
         $xmlRequest=$this->_xmlAccessRequest;
 

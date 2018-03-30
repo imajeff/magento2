@@ -135,6 +135,36 @@ class Config
                     '65' => __('UPS Saver'),
                 ],
             ],
+            'originUniship' => [
+                // United States Domestic Shipments
+                'United States Domestic Shipments' => [
+					'SND5' => 'Saturday - UPS Next Day Air Early A.M.',
+					'SND' => 'Saturday - UPS Next Day Air',
+					'SSC' => 'Saturday - UPS 2nd Day Air',
+                    'ND5'  => Mage::helper('usa')->__('UPS Next Day Air Early A.M.'),
+                    'ND'   => Mage::helper('usa')->__('UPS Next Day Air'),
+                    'ND4'  => Mage::helper('usa')->__('UPS Next Day Air Saver'),
+                    'SC25' => Mage::helper('usa')->__('UPS Second Day Air A.M.'),
+                    'SC'   => Mage::helper('usa')->__('UPS Second Day Air'),
+                    'SC3'  => Mage::helper('usa')->__('UPS Three-Day Select'),
+                    'SG'   => Mage::helper('usa')->__('UPS Ground'),
+                    'SGR'   => Mage::helper('usa')->__('UPS Ground Residential'),
+                ],
+                // Shipments Originating in United States
+                'Shipments Originating in United States' => [
+                    '01' => Mage::helper('usa')->__('UPS Next Day Air'),
+                    '02' => Mage::helper('usa')->__('UPS Second Day Air'),
+                    '03' => Mage::helper('usa')->__('UPS Ground'),
+                    '07' => Mage::helper('usa')->__('UPS Worldwide Express'),
+                    '08' => Mage::helper('usa')->__('UPS Worldwide Expedited'),
+                    '11' => Mage::helper('usa')->__('UPS Standard'),
+                    '12' => Mage::helper('usa')->__('UPS Three-Day Select'),
+                    '14' => Mage::helper('usa')->__('UPS Next Day Air Early A.M.'),
+                    '54' => Mage::helper('usa')->__('UPS Worldwide Express Plus'),
+                    '59' => Mage::helper('usa')->__('UPS Second Day Air A.M.'),
+                    '65' => Mage::helper('usa')->__('UPS Saver'),
+                ]
+            ],
             'method' => [
                 '1DM' => __('Next Day Air Early AM'),
                 '1DML' => __('Next Day Air Early AM Letter'),
