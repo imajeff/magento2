@@ -406,7 +406,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 return $this->_getCgiQuotes();
             case 'UPS_XML':
                 return $this->_getXmlQuotes();
-            case 'UPS_UNISHIP':
+            case 'UNISHIP_XML':
                 return $this->_getUnishippersQuotes();
             default:
                 break;
@@ -1377,7 +1377,7 @@ XMLAuth;
     {
         $allowed = explode(',', $this->getConfigData('allowed_methods'));
         $arr = [];
-        $isByCode = $this->getConfigData('type') == 'UPS_XML';
+        $isByCode = $this->getConfigData('type') == 'UPS_XML' || $this->getConfigData('type') == 'UNISHIP_XML';
         foreach ($allowed as $code) {
             $arr[$code] = $isByCode ? $this->getShipmentByCode($code) : $this->configHelper->getCode('method', $code);
         }

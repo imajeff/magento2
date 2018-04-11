@@ -19,7 +19,8 @@ class Type implements OptionSourceInterface
     {
         return [
             ['value' => 'UPS', 'label' => __('United Parcel Service')],
-            ['value' => 'UPS_XML', 'label' => __('United Parcel Service XML')]
+            ['value' => 'UPS_XML', 'label' => __('United Parcel Service XML')],
+            ['value' => 'UNISHIP_XML', 'label' => __('Unishippers XML')]
         ];
     }
 }

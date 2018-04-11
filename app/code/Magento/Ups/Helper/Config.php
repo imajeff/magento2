@@ -47,9 +47,23 @@ class Config
         return [
             'action' => ['single' => '3', 'all' => '4'],
             'originShipment' => [
+                // Unishippers United States Domestic
+                'Unishippers United States Domestic' => [
+                    'SND5' => 'Saturday - UPS Next Day Air Early A.M.',
+                    'SND' => 'Saturday - UPS Next Day Air',
+                    'SSC' => 'Saturday - UPS 2nd Day Air',
+                    'ND5'  => __('UPS Next Day Air Early A.M.'),
+                    'ND'   => __('UPS Next Day Air'),
+                    'ND4'  => __('UPS Next Day Air Saver'),
+                    'SC25' => __('UPS Second Day Air A.M.'),
+                    'SC'   => __('UPS Second Day Air'),
+                    'SC3'  => __('UPS Three-Day Select'),
+                    'SG'   => __('UPS Ground'),
+                    'SGR'   => __('UPS Ground Residential'),
+                ],
                 // United States Domestic Shipments
                 'United States Domestic Shipments' => [
-                    '01' => __('UPS Next Day Air'),
+                    '01' => __('UPS Nextest Day Air'),
                     '02' => __('UPS Second Day Air'),
                     '03' => __('UPS Ground'),
                     '07' => __('UPS Worldwide Express'),
@@ -134,36 +148,6 @@ class Config
                     '54' => __('UPS Worldwide Express Plus'),
                     '65' => __('UPS Saver'),
                 ],
-            ],
-            'originUniship' => [
-                // United States Domestic Shipments
-                'United States Domestic Shipments' => [
-					'SND5' => 'Saturday - UPS Next Day Air Early A.M.',
-					'SND' => 'Saturday - UPS Next Day Air',
-					'SSC' => 'Saturday - UPS 2nd Day Air',
-                    'ND5'  => __('UPS Next Day Air Early A.M.'),
-                    'ND'   => __('UPS Next Day Air'),
-                    'ND4'  => __('UPS Next Day Air Saver'),
-                    'SC25' => __('UPS Second Day Air A.M.'),
-                    'SC'   => __('UPS Second Day Air'),
-                    'SC3'  => __('UPS Three-Day Select'),
-                    'SG'   => __('UPS Ground'),
-                    'SGR'   => __('UPS Ground Residential'),
-                ],
-                // Shipments Originating in United States
-                'Shipments Originating in United States' => [
-                    '01' => __('UPS Next Day Air'),
-                    '02' => __('UPS Second Day Air'),
-                    '03' => __('UPS Ground'),
-                    '07' => __('UPS Worldwide Express'),
-                    '08' => __('UPS Worldwide Expedited'),
-                    '11' => __('UPS Standard'),
-                    '12' => __('UPS Three-Day Select'),
-                    '14' => __('UPS Next Day Air Early A.M.'),
-                    '54' => __('UPS Worldwide Express Plus'),
-                    '59' => __('UPS Second Day Air A.M.'),
-                    '65' => __('UPS Saver'),
-                ]
             ],
             'method' => [
                 '1DM' => __('Next Day Air Early AM'),
