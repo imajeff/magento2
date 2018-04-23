@@ -206,7 +206,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             return $this->getErrorMessage();
         }
 
-        $this->setRequest($request);
+//        $this->setRequest($request);
         $this->_result = $this->_getQuotes();
         $this->_updateFreeMethodQuote($request);
 
@@ -336,6 +336,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
 
         $weight = $this->getTotalNumOfBoxes($request->getPackageWeight());
 
+file_put_contents($_SERVER['DOCUMENT_ROOT']."/jls/trace1.txt", print_r($request->getAllItems(), true));
         $weight = $this->_getCorrectWeight($weight);
 
         $rowRequest->setWeight($weight);
@@ -903,10 +904,10 @@ XMLRequest;
 	 */
     protected function _getUnishippersQuotes()
     {
-        $result = Mage::getModel('shipping/rate_result');
-        $r = $this->_rawRequest;
-		$tweight = $r->getWeight();
-
+		$tweight = $rowRequest->getWeight();
+/*
+file_put_contents($_SERVER['DOCUMENT_ROOT']."/jls/trace2.txt", print_r($tweight, true));
+        // Total weight at least 200 lb can use just one request for any number of boxes
 		if ($tweight >= 200) {
 			// Aggregate weight of all boxes
 			$r1 = $this->_getUnishippersQuote($tweight);
@@ -938,37 +939,42 @@ XMLRequest;
 				}
 			}
 		}
-		return $result;
+*/
+		return $this->_result;
 	}
 
     protected function _getUnishippersQuote($weight, $service='ALL')
     {
-        $url = $this->getConfigData('uniship_xml_url');
+        $url = $this->getConfigData('gateway_xml_url');
+/*
+        $this->setXMLAccessRequest();
+        $xmlRequest = $this->_xmlAccessRequest;
+        $debugData['accessRequest'] = $this->filterDebugData($xmlRequest);
 
-        $xmlRequest=$this->_xmlAccessRequest;
-
-		date_default_timezone_set("US/Mountain");
-		
-        $r = $this->_rawRequest;
-        $params = array(
+        $rowRequest = $this->_rawRequest;
+        if (self::USA_COUNTRY_ID == $rowRequest->getDestCountry()) {
+            $destPostal = substr($rowRequest->getDestPostal(), 0, 5);
+        } else {
+            $destPostal = $rowRequest->getDestPostal();
+        }
+        $params = [
             'userid' => $this->getConfigData('username'),
             'userid_pass' => $this->getConfigData('password'),
 			'custNumber'  => $this->getConfigData('access_license_number'),
 			'requestKey'  => date('r'),
-            '10_action'      => $r->getAction(),
-            '13_product'     => $r->getProduct(),
-            '14_origCountry' => $r->getOrigCountry(),
-            '15_origPostal'  => $r->getOrigPostal(),
-            'origCity'       => $r->getOrigCity(),
-            'origRegionCode' => $r->getOrigRegionCode(),
-            'destState'      => $r->getDestState(),
-            '19_destPostal'  => 'US' == $r->getDestCountry() ? substr($r->getDestPostal(), 0, 5) : $r->getDestPostal(), // UPS returns error for zip+4 US codes
-            '22_destCountry' => $r->getDestCountry(),
-            'destRegionCode' => $r->getDestRegionCode(),
-//            '23_weight'      => intval($r->getWeight()),
-            '47_rate_chart'  => $r->getPickup(),
-            '48_container'   => $r->getContainer(),
-            '49_residential' => $r->getDestType(),
+            '10_action'      => $rowRequest->getAction(),
+            '13_product'     => $rowRequest->getProduct(),
+            '14_origCountry' => $rowRequest->getOrigCountry(),
+            '15_origPostal'  => $rowRequest->getOrigPostal(),
+            'origCity'       => $rowRequest->getOrigCity(),
+            'origRegionCode' => $rowRequest->getOrigRegionCode(),
+            'destState'      => $rowRequest->getDestState(),
+            '19_destPostal'  => 'US' == $rowRequest->getDestCountry() ? substr($rowRequest->getDestPostal(), 0, 5) : $rowRequest->getDestPostal(), // Ignore extra of zip+4 US codes
+            '22_destCountry' => $rowRequest->getDestCountry(),
+            'destRegionCode' => $rowRequest->getDestRegionCode(),
+            '47_rate_chart'  => $rowRequest->getPickup(),
+            '48_container'   => $rowRequest->getContainer(),
+            '49_residential' => $rowRequest->getDestType(),
 			'shipDate'       => date('Y-m-d'),
         );
 		$weight = round($weight);
@@ -998,9 +1004,10 @@ $xmlRequest .= <<< XMLRequest
 </unishippersdomesticraterequest>
 XMLRequest;
 
+file_put_contents($_SERVER['DOCUMENT_ROOT']."/jls/trace3.txt", print_r($xmlRequest, true));
         $xmlResponse = null; //$this->_getCachedQuotes($xmlRequest); doesn't help
         if ($xmlResponse === null) {
-            $debugData = array('request' => $xmlRequest);
+            $debugData['request'] = $xmlParams;
             try {
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, $url);
@@ -1009,26 +1016,27 @@ XMLRequest;
                 curl_setopt($ch, CURLOPT_POST, 1);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $xmlRequest);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (boolean)$this->getConfigFlag('mode_xml'));
-                $xmlResponse = curl_exec ($ch);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (bool)$this->getConfigFlag('mode_xml'));
+                $xmlResponse = curl_exec($ch);
 
                 $debugData['result'] = $xmlResponse;
 //                $this->_setCachedQuotes($xmlRequest, $xmlResponse);
-            }
-            catch (Exception $e) {
-                $debugData['result'] = array('error' => $e->getMessage(), 'code' => $e->getCode());
+            } catch (\Exception $e) {
+                $debugData['result'] = ['error' => $e->getMessage(), 'code' => $e->getCode()];
                 $xmlResponse = '';
             }
             $this->_debug($debugData);
         }
+*/
 	   return $this->_parseUnishipResponse($xmlResponse);
     }
 
     protected function _parseUnishipResponse($xmlResponse)
     {
+/*
         $costArr = array();
         $priceArr = array();
-        $result = Mage::getModel('shipping/rate_result');
+//        $result = Mage::getModel('shipping/rate_result');
         if (strlen(trim($xmlResponse))>0) {
             $xml = new Varien_Simplexml_Config();
             $xml->loadString($xmlResponse);
@@ -1089,9 +1097,38 @@ XMLRequest;
 				$result->append($rate);
             }
         }
-
-        return $result;
+*/
+        return $this->$_result;
     }
+
+	/**Merge rates from $r1 into $result, adding to total if already exists. 
+	**/
+	protected function _combineResults($r1, &$result, $mult = 1)
+	{
+		foreach ($r1->getAllRates() as $rate) {
+			// find corresponding rate from result totals
+			$method = $rate->getMethod();
+
+			foreach ($result->getAllRates() as $tr) {
+				if($method == $tr->getMethod()) {
+					$trate = $tr;
+					break;
+				}
+			}
+
+			if (isset($trate)) {
+				// if already there, add new rate price to existing
+				$trate->setPrice($trate->getPrice() + ($rate->getPrice() * $mult));
+			}
+			else {
+				// not found, so append new rate to totals
+				$rate->setPrice($rate->getPrice() * $mult);
+				$result->append($rate);
+			}
+		}
+
+		return $result;
+	}
 
     /**
      * Get tracking
